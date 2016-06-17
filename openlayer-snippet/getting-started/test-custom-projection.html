@@ -1,0 +1,93 @@
+<html>
+<head>
+<title>Test dynamic</title>
+<link rel="stylesheet"
+	href="http://openlayers.org/en/v3.16.0/css/ol.css" type="text/css">
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+<script src="http://openlayers.org/en/v3.16.0/build/ol.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.14/proj4.js"></script>
+<script src="proj-epsg2154.js"></script>
+<script src="gtils.js"></script>
+</head>
+<body>
+	<div class="container-fluid">
+		<div id="map" class="map"></div>
+	</div>
+	<script>
+
+	var osmlayer = new ol.layer.Tile({
+		source: new ol.source.OSM()
+	});
+
+	var map = new ol.Map({
+		layers: [osmlayer],
+		target: document.getElementById('map')
+	});
+	
+	map.setView(new ol.View({
+	    projection: 'EPSG:2154',
+	    center: center2154,
+	    zoom: 3
+	}));
+	
+	var vsource = new ol.source.Vector();
+	 var bbox = new ol.layer.Vector({
+		 source: vsource
+	 });
+	 
+    map.addLayer(bbox);
+
+    var geojson = {
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "properties": {},
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [
+              [[-0.944824, 46.134170], [-0.944824, 48.312428],
+               [4.438477, 48.312428], [4.438477, 46.134170],
+               [-0.944824, 46.134170]
+              ]
+            ]
+          }
+          
+        }
+      ]
+    };
+    
+    var gtilJson11 = {
+        "type": "FeatureCollection",
+        "features": [
+          {
+    		"type":"Feature",
+    		"bbox":[1026857.3079975994,6892491.963143042,1027044.0721353356,6892732.878113443],
+    		"geometry":{
+    			"type":"LineString",
+    			"coordinates":[
+    			               [1027044.0721,6892491.9631],[1027031.4479,6892511.6931],[1026983.2239,6892570.6075],[1026857.308,6892732.8781]]
+    					},
+    		"properties":{"idGaia":"4fb23936-6665-11e3-afff-01f464e0362d","codeLigne":"159000","idSrl":"4fae5f3a-6665-11e3-afff-01f464e0362d","pkDebut":4100145,"pkFin":4100450},
+    		"id":"2dede04e-2717-11e6-adff-01ec01033550"}
+          ]
+    }
+
+    var format = new ol.format.GeoJSON({
+      defaultDataProjection: 'EPSG:4326'
+    });
+    var features = format.readFeatures(geojson, {
+      dataProjection: 'EPSG:4326',
+      featureProjection: 'EPSG:2154'
+    });
+
+    var gFeatures = new ol.format.GeoJSON().readFeatures(gtilJson);
+    
+    vsource.addFeatures(gFeatures);
+    map.getView().fit(vsource.getExtent(), (map.getSize()));
+	
+	</script>
+</body>
+</html>

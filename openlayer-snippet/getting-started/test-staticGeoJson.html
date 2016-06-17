@@ -1,0 +1,84 @@
+<html>
+<head>
+<title>Test dynamic</title>
+<link rel="stylesheet"
+	href="http://openlayers.org/en/v3.16.0/css/ol.css" type="text/css">
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+<script src="http://openlayers.org/en/v3.16.0/build/ol.js"></script>
+<script
+	src="http://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.14/proj4.js"></script>
+<script src="proj-epsg2154.js"></script>
+<script src="gtils.js"></script>
+</head>
+<body>
+	<div class="container-fluid">
+		<div id="map" class="map"></div>
+	</div>
+	<script>
+		var osmlayer = new ol.layer.Tile({
+			source : new ol.source.OSM()
+		});
+
+		var map = new ol.Map({
+			layers : [ osmlayer ],
+			target : document.getElementById('map')
+		});
+
+		map.setView(new ol.View({
+			projection : 'EPSG:2154',
+			center : center2154,
+			zoom : 3
+		}));
+
+		var astyle = new ol.style.Style({
+			fill: new ol.style.Fill({
+				color: 'rgba(255, 100, 50, 0.3)'
+			}),
+			stroke: new ol.style.Stroke({
+				width: 4,
+				color: 'rgba(255, 100, 50, 0.8)'
+			}),
+			image: new ol.style.Circle({
+				fill: new ol.style.Fill({
+					color: 'rgba(55, 200, 150, 0.5)'
+				}),
+				stroke: new ol.style.Stroke({
+					width: 1,
+					color: 'rgba(0, 0, 0, 0.8)'
+				}),
+				radius: 2
+			}),
+		});
+
+		var vsource = new ol.source.Vector();
+		var gtilVectorLayer = new ol.layer.Vector({
+			source : vsource,
+			style: astyle
+		});
+		map.addLayer(gtilVectorLayer);
+
+		var gFeatures = new ol.format.GeoJSON().readFeatures(gtilJson);
+
+		vsource.addFeatures(gFeatures);
+		
+		var pointFeatures = []
+		for(i=0; i<gFeatures.length; i++){
+			geometry = gFeatures[i].getGeometry();
+
+			coordinates = geometry.getCoordinates();
+
+			pointFeature = new ol.Feature({
+  				geometry: new ol.geom.Point(coordinates[0]),
+  				name: 'pk'
+			});
+			pointFeatures.push(pointFeature);
+		}
+		
+		vsource.addFeatures(pointFeatures);
+		
+		map.getView().fit(vsource.getExtent(), (map.getSize()));
+	</script>
+</body>
+</html>

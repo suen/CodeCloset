@@ -1,0 +1,163 @@
+<html>
+<head>
+<title>OpenLayer Test</title>
+<link rel="stylesheet"
+	href="http://openlayers.org/en/v3.16.0/css/ol.css" type="text/css">
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+<script src="http://openlayers.org/en/v3.16.0/build/ol-debug.js"></script>
+<script
+	src="http://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.14/proj4.js"></script>
+<script
+	src="http://ajax.googleapis.com/ajax/libs/angularjs/1.4.8/angular.min.js"></script>
+
+<script src="proj-epsg2154.js"></script>
+<script src="ol-style.js"></script>
+<script src="openlayerapp.js"></script>
+
+</head>
+<body ng-app="oaps" ng-controller="mainCtrl">
+	<div class="container-fluid" id="progress" style="position: absolute; left: 50%; z-index:3; display: none">
+		<div style="position: relative; left: -50%;">
+			<div class="alert alert-info" role="alert">Chargement en cours..</div>
+		</div>
+	</div>
+
+	<nav class="navbar navbar-default"
+		style="margin-bottom: 0px; border: 0px;">
+		<div class="container-fluid">
+			<div class="row" style="padding: 30px 10px 20px 0px;">
+				<div class="col-lg-1" style="margin-top: -20px">
+					<img src="SNCF_reseau.png" style="height: 60px; margin-right: 10px" />
+				</div>
+				<div class="col-lg-1">
+					<input type="text" class="form-control" ng-model="codeLigneField" placeholder="Code Ligne" />
+				</div>
+				<div class="col-lg-1">
+					<input type="text" class="form-control" ng-model="pkDebutField" placeholder="Pk Debut" />
+				</div>
+				<div class="col-lg-1">
+					<input type="text" class="form-control" ng-model="pkFinField" placeholder="Pk Fin" />
+				</div>
+				<div class="col-lg-1">
+					<button type="submit" class="btn btn-primary" ng-click="searchAndHighlight(codeLigneField, '1', pkDebutField, pkFinField)">Recherche</button>
+				</div>
+				<div class="col-lg-2 col-lg-offset-5">
+					<button type="submit" class="btn btn-default pull-right" id="layerButton">Calques</button>
+					<button type="submit" class="btn btn-default pull-right" id="toggleConfigButton">Configuration</button>
+				</div>
+			</div>
+
+		</div>
+	</nav>
+
+	<div class="container-fluid" id="configuration"
+		style="margin-bottom: 20px; display:none;">
+		<h2>Configuration</h2>
+		
+		<div class="row">
+			<div class="col-lg-9">
+				<!-- <div class="form-group">
+					<div class="row">
+						<div class="col-xs-2">
+							<label for="layer1name">Calque 1</label> <input type="text"
+								class="form-control" id="layer1name"
+								value="TronconDItineraireLigne" readonly>
+						</div>
+						<div class="col-xs-10">
+							<label for="layer1source">URL</label> <input type="text"
+								class="form-control" id="layer1source" placeholder="http://.."
+								value="http://localhost:8080/OWS?service=WFS&version=1.1.0&request=GetFeature&typeName=gaia:GTronconDItineraireLigne&outputFormat=text/json">
+						</div>
+					</div>
+				</div> -->
+				<div class="form-group" ng-repeat="layer in uiLayers">
+					<div class="row">
+						<div class="col-xs-2">
+							<label for="{{ layer.idNameInput }}">{{ layer.label }}</label>
+							<input type="text" class="form-control" id="{{ layer.idNameInput }}" placeholder="{{ 'Nom ' + layer.label }}" value="{{ layer.nameValue }}"  ng-Readonly="{{ layer.readonly }}" />
+						</div>
+						<div class="col-xs-8">
+							<label for="{{ layer.idSourceInput }}">URL</label>
+							<input type="text"
+								class="form-control" id="{{ layer.idSourceInput }}" placeholder="http://.." value="{{ layer.sourceValue }}"/>
+						</div>
+						<div class="col-xs-2">
+							<label>Style</label>
+							<select class="form-control" id="{{ layer.idStyleName }}">
+								<option ng-repeat="styleName in getAvailableStyles()" ng-selected="styleName == layer.styleName" >{{ styleName }}</option>
+							</select>
+						</div>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<div class="row">
+						<div class="col-xs-2">
+							<button type="submit" style="height:72px; width: 72px;" class="btn btn-lg btn-success" ng-click="addEmptyLayer()">+</button>
+						</div>
+						<div class="col-xs-7">
+							<div id="configuration-status" style="display:none;" class="alert alert-success" role="alert"></div>
+						</div>
+						
+					</div>
+				</div>
+
+
+				<div class="form-group">
+					<div class="row">
+						<div class="col-xs-9 col-xs-offset-2">
+							<button type="submit" class="btn btn-primary" ng-click="updateLayersList()">Enregistrer</button>
+							<button type="submit" class="btn btn-default" id="closeConfigButton">Fermer</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="row">
+			<div id="leftpanel" class="col-md-2"
+				style="display: none; padding: 20px 10px; position: absolute; left: 30px; right: 10px; z-index: 2;">
+				<div class="panel panel-primary" style="">
+					<div class="panel-heading">
+						<button id="leftPanelCloseBtn" class="btn btn-primary" style="float: right;"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>
+						<p style="padding-top: 5px;">{{leftpanelTitle}}</p>
+					</div>
+					<ul class="list-group">
+						<li class="list-group-item" ng-repeat="item in leftpanelItems">{{ item }}</li>
+					</ul>
+				</div>
+			</div>
+
+			<div id="rightpanel" class="col-md-2"
+				style="display: block; padding: 20px 10px; position: absolute; right: 10px; z-index: 2;">
+				<div class="panel panel-primary" style="">
+					<div class="panel-heading">
+						<button id="rightPanelCloseBtn" class="btn btn-primary" style="float: right;"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></button>
+						<p style="padding-top: 5px;">Calques</p>
+					</div>
+					<ul class="list-group">
+						<li class="list-group-item" ng-repeat="layer in validuiLayers">
+							<div class="checkbox">
+						        <label>
+						          <input type="checkbox" ng-model="layer.display" ng-change="toggleLayerVisibility(layer)" >{{ layer.nameValue }}
+						        </label>
+						      </div>
+						 </li>
+					</ul>
+				</div>
+			</div>
+
+
+			<div id="map-container" style="padding: 0px;">
+				<div id="map" class="map" style="background: #dfdfdf;"></div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

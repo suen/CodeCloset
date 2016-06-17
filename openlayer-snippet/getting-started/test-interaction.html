@@ -1,0 +1,147 @@
+<html>
+<head>
+<title>Test dynamic</title>
+<link rel="stylesheet"
+	href="http://openlayers.org/en/v3.16.0/css/ol.css" type="text/css">
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+
+<script src="http://openlayers.org/en/v3.16.0/build/ol.js"></script>
+<script
+	src="http://cdnjs.cloudflare.com/ajax/libs/proj4js/2.3.14/proj4.js"></script>
+<script src="proj-epsg2154.js"></script>
+<script src="gtils.js"></script>
+</head>
+<body>
+	<div class="container-fluid">
+		<div id="map" class="map"></div>
+	</div>
+	<script>
+	
+		//Global variables for this scope
+
+		var map;
+		var gtilSource;
+		var selectInteraction;
+			
+		var defaultStyle = new ol.style.Style({
+			fill : new ol.style.Fill({
+				color : 'rgba(255, 100, 50, 0.3)'
+			}),
+			stroke : new ol.style.Stroke({
+				width : 4,
+				color : 'rgba(76, 76, 255, 0.8)'
+			}),
+			image : new ol.style.Circle({
+				fill : new ol.style.Fill({
+					color : 'rgba(55, 200, 150, 0.5)'
+				}),
+				stroke : new ol.style.Stroke({
+					width : 1,
+					color : 'rgba(0, 0, 0, 0.8)'
+				}),
+				radius : 2
+			}),
+		});
+
+		var selectGtilStyle = new ol.style.Style({
+			stroke : new ol.style.Stroke({
+				color : 'rgba(255, 100, 50, 0.5)',
+				width : 4
+			})
+		});
+		
+		//Functions, the entry point is main()
+
+		function createPointFeature(features) {
+			var pointFeatures = []
+			for (i = 0; i < features.length; i++) {
+				geometry = features[i].getGeometry();
+
+				coordinates = geometry.getCoordinates();
+
+				pointFeature = new ol.Feature({
+					geometry : new ol.geom.Point(coordinates[0]),
+					name : 'pkDebut'
+				});
+				pointFeatures.push(pointFeature);
+			}
+			return pointFeatures;
+		}
+		
+		function search(codeLigne, pkD, pkF){
+			var features = gtilSource.getFeatures();
+			return features.filter(function(feature){
+				code = feature.get("codeLigne");
+				pkdebut = Number.parseInt(feature.get("pkDebut"));
+				pkfin = Number.parseInt(feature.get("pkFin"));
+				return (code == codeLigne && pkdebut >= Number.parseInt(pkD) && pkfin <= Number.parseInt(pkF));
+			});
+		}
+
+		function highlight(features){
+			for (i=0; i<features.length; i++){
+				selectInteraction.getFeatures().push(features[i])
+			}
+			tempSource = new ol.source.Vector({features: features});
+			map.getView().fit(tempSource.getExtent(), (map.getSize()))
+		}
+
+		function main() {
+			var osmlayer = new ol.layer.Tile({
+				source : new ol.source.OSM()
+			});
+
+			map = new ol.Map({
+				layers : [ osmlayer ],
+				target : document.getElementById('map'),
+				renderer : 'canvas',
+				view : new ol.View({
+					projection : 'EPSG:2154',
+					center : center2154,
+					zoom : 3
+				})
+			});
+
+			gtilSource = new ol.source.Vector();
+			var gtilVectorLayer = new ol.layer.Vector({
+				id : "gtil",
+				source : gtilSource,
+				style : defaultStyle
+			});
+			map.addLayer(gtilVectorLayer);
+
+			var pkDebutPointSource = new ol.source.Vector();
+			var pkDebutPointLayer = new ol.layer.Vector({
+				id : "pkDebutLayer",
+				source : pkDebutPointSource,
+				style : defaultStyle
+			});
+			map.addLayer(pkDebutPointLayer);
+
+			selectInteraction = new ol.interaction.Select({
+		        condition: ol.events.condition.singleClick,
+		        toggleCondition: ol.events.condition.shiftKeyOnly,
+		        layers: function (layer) {
+		          return layer.get('id') == 'gtil';
+		        },
+		        style: selectGtilStyle
+		    });
+			map.getInteractions().extend([selectInteraction]);
+			
+			function loadData() {
+				var gFeatures = new ol.format.GeoJSON().readFeatures(gtilJson);
+
+				gtilSource.addFeatures(gFeatures);
+				pkDebutPointSource.addFeatures(createPointFeature(gFeatures));
+
+				map.getView().fit(gtilSource.getExtent(), (map.getSize()));
+			}
+
+			loadData();
+		}
+
+		main();
+	</script>
+</body>
+</html>
